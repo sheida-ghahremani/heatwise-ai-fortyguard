@@ -5,7 +5,6 @@ import json
 import os
 from datetime import datetime
 
-import osmnx as ox
 import pandas as pd
 import requests
 import streamlit as st
@@ -19,6 +18,7 @@ from heatwise.albedo import apply_osm_surface_albedo
 from heatwise.demo import DemoWeather, LANDMARKS, build_demo_graph, nearest_node
 from heatwise.data_integration import assign_heatmap_to_graph, load_fortyguard_heatmap
 from heatwise.geocoding import GeocodingResult, search_college_station
+from heatwise.graph_io import load_routing_graph
 from heatwise.live_data import COLLEGE_STATION_TZ, current_hour, fetch_hourly_snapshot, latest_cached_snapshot
 from heatwise.map_view import MAPBOX_STYLES, ROUTE_COLORS, build_map
 from heatwise.models import Activity, AgeGroup, Clothing, UserProfile
@@ -95,14 +95,14 @@ AREA_CONFIG = {
 CITY_BOUNDARY = Path("data/boundaries/CollegeStation.geojson")
 
 
-@st.cache_resource
+@st.cache_resource(max_entries=1)
 def load_live_graph(path: str):
-    return ox.load_graphml(path)
+    return load_routing_graph(path)
 
 
-@st.cache_resource
+@st.cache_resource(max_entries=1)
 def load_snapshot_graph(graph_path: str, heatmap_path: str, canopy_path: str, building_path: str):
-    graph = ox.load_graphml(graph_path)
+    graph = load_routing_graph(graph_path)
     heatmap = load_fortyguard_heatmap(heatmap_path)
     graph = assign_heatmap_to_graph(graph, heatmap)
     svf_values = [float(data.get("sky_view_factor", 1.0)) for *_, data in graph.edges(data=True)]

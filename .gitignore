@@ -242,6 +242,8 @@ data/heatmaps/*
 data/osm/*
 !data/osm/TAMU_Full_walk.graphml
 !data/osm/TAMU_Full_bike.graphml
+!data/osm/TAMU_Full_walk_prepared.pickle
+!data/osm/TAMU_Full_bike_prepared.pickle
 !data/osm/TAMU_Full_buildings.geojson
 !data/osm/RELLIS_walk.graphml
 !data/osm/RELLIS_bike.graphml

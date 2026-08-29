@@ -1,4 +1,5 @@
 import networkx as nx
+import pickle
 from datetime import datetime, timezone
 from unittest.mock import patch
 
@@ -6,6 +7,7 @@ from heatwise.assistant import answer_question
 from heatwise.demo import build_demo_graph, nearest_node
 from heatwise.data_integration import load_fortyguard_heatmap
 from heatwise.live_data import MAX_FALLBACK_DAYS, cache_path, current_hour
+from heatwise.graph_io import load_routing_graph
 from heatwise.models import Activity, AgeGroup, Clothing, UserProfile
 from heatwise.risk import apparent_temperature_c, segment_heat_cost
 from heatwise.routing import calculate_routes, prepare_graph
@@ -75,3 +77,13 @@ def test_fortyguard_fallback_window_is_bounded():
 def test_user_selected_clothing_sets_pet_insulation():
     profile = UserProfile(AgeGroup.OLDER, Activity.WALKING, Clothing.PROTECTIVE)
     assert profile.summer_clothing_clo == 1.0
+
+
+def test_graph_loader_prefers_binary_sidecar(tmp_path):
+    graphml_path = tmp_path / "campus.graphml"
+    cached_graph = nx.MultiDiGraph()
+    cached_graph.add_node(1, x=-96.34, y=30.61)
+    with graphml_path.with_suffix(".pickle").open("wb") as target:
+        pickle.dump(cached_graph, target, protocol=5)
+    loaded = load_routing_graph(graphml_path)
+    assert list(loaded.nodes) == [1]
