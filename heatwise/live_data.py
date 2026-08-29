@@ -113,29 +113,27 @@ def fetch_hourly_snapshot(
         raise ValueError(f"Unknown HeatWise area: {area}")
 
     client = FortyGuardClient()
-    for days_back in range(MAX_FALLBACK_DAYS + 1):
-        candidate = requested_at - timedelta(days=days_back)
-        path = cache_path(candidate, area)
-        if path.exists() and not force and _is_usable(path):
-            return HeatmapSnapshot(path, candidate, _read_fetched_at(path), True)
+    path = cache_path(requested_at, area)
+    if path.exists() and not force and _is_usable(path):
+        return HeatmapSnapshot(path, requested_at, _read_fetched_at(path), True)
 
-        response = client.create_heatmap(
-            polygon_aoi=AREA_AOIS[area],
-            start_date=candidate.date().isoformat(),
-            start_time=candidate.strftime("%H:00"),
-            filter_type=1,
-            granularity=GRANULARITY_M,
-            verbose=False,
-        )
-        fetched_at = datetime.now(COLLEGE_STATION_TZ)
-        map_data = response.get("result", {}).get("map_data", {})
-        if not map_data.get("features"):
-            continue
+    response = client.create_heatmap(
+        polygon_aoi=AREA_AOIS[area],
+        start_date=requested_at.date().isoformat(),
+        start_time=requested_at.strftime("%H:00"),
+        filter_type=1,
+        granularity=GRANULARITY_M,
+        timeout=120.0,
+        verbose=False,
+    )
+    fetched_at = datetime.now(COLLEGE_STATION_TZ)
+    map_data = response.get("result", {}).get("map_data", {})
+    if map_data.get("features"):
         payload = {
             "_heatwise": {
-                "requested_at": candidate.isoformat(),
+                "requested_at": requested_at.isoformat(),
                 "original_requested_at": requested_at.isoformat(),
-                "fallback_days": days_back,
+                "fallback_days": 0,
                 "fetched_at": fetched_at.isoformat(),
                 "timezone": str(COLLEGE_STATION_TZ),
                 "granularity_m": GRANULARITY_M,
@@ -144,7 +142,7 @@ def fetch_hourly_snapshot(
         }
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(payload))
-        return HeatmapSnapshot(path, candidate, fetched_at, False)
+        return HeatmapSnapshot(path, requested_at, fetched_at, False)
 
     # Only fall back to a different cached hour after the API has actually
     # been tried for the requested hour and each allowed fallback day.  The
@@ -154,10 +152,7 @@ def fetch_hourly_snapshot(
     if recent and requested_at - recent.requested_at <= timedelta(days=MAX_FALLBACK_DAYS):
         return recent
 
-    raise ValueError(
-        f"FortyGuard returned no temperature layer for the selected hour or the previous "
-        f"{MAX_FALLBACK_DAYS} days"
-    )
+    raise ValueError("FortyGuard returned no temperature layer for the exact selected hour")
 
 
 def latest_cached_snapshot(area: str = "tamu") -> HeatmapSnapshot | None:

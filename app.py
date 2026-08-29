@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 
 import pandas as pd
@@ -307,20 +307,24 @@ with st.sidebar:
         st.caption("Walking and jogging use the OSM pedestrian network.")
     st.caption("UTCI describes environmental stress; activity-sensitive PET uses age, MET, clothing, MRT, humidity and wind.")
     if data_source == "Live College Station data":
-        use_current_hour = st.toggle("Use current hour", value=True)
+        use_latest_hour = st.toggle("Use latest complete hour", value=True)
         now_hour = current_hour()
+        latest_complete_hour = now_hour - timedelta(hours=1)
         selected_time = st.time_input(
             "Temperature hour (College Station)",
-            value=now_hour.time(),
+            value=latest_complete_hour.time(),
             step=3600,
-            disabled=use_current_hour,
+            disabled=use_latest_hour,
         )
         requested_at = (
-            now_hour
-            if use_current_hour
+            latest_complete_hour
+            if use_latest_hour
             else datetime.combine(now_hour.date(), selected_time, tzinfo=COLLEGE_STATION_TZ)
         )
-        st.caption("Changing the hour loads one FortyGuard hourly snapshot and uses its cache afterward.")
+        st.caption(
+            "Latest complete hour uses a transparent one-hour publication lag. "
+            "All FortyGuard, weather, solar and shade inputs remain synchronized to the selected hour."
+        )
     st.divider()
     st.subheader("Weather inputs")
     if data_source == "Prototype scenario":
