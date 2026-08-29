@@ -12,4 +12,5 @@ rasterio>=1.4.0
 osmnx>=2.0.0
 pillow>=10.0.0
 shapely>=2.0.0
+scipy>=1.10.0
 pythermalcomfort>=3.6,<4

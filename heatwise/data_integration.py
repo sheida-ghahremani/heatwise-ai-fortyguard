@@ -5,6 +5,8 @@ from pathlib import Path
 
 import geopandas as gpd
 import networkx as nx
+import numpy as np
+from scipy.spatial import cKDTree
 from shapely.geometry import Point
 
 
@@ -24,23 +26,34 @@ def assign_heatmap_to_graph(
     *,
     fallback_c: float | None = None,
 ) -> nx.Graph:
-    """Assign temperature to edges by spatially joining their midpoints to tiles."""
+    """Assign each edge the nearest 100 m FortyGuard tile temperature."""
     # The graph was freshly loaded for this cached snapshot; mutate it in place
     # to avoid a second expanded NetworkX graph in memory.
-    rows = []
     edge_data = []
-    for index, (u, v, data) in enumerate(graph.edges(data=True)):
+    edge_xy = []
+    for u, v, data in graph.edges(data=True):
         lat = (float(graph.nodes[u]["y"]) + float(graph.nodes[v]["y"])) / 2
         lon = (float(graph.nodes[u]["x"]) + float(graph.nodes[v]["x"])) / 2
-        rows.append({"edge_index": index, "geometry": Point(lon, lat)})
+        edge_xy.append((lon, lat))
         edge_data.append(data)
-    points = gpd.GeoDataFrame(rows, crs="EPSG:4326")
-    joined = gpd.sjoin(points, heatmap[["average_temperature", "geometry"]], predicate="within", how="left")
+
+    # FortyGuard's TCM response is a regular 100 m polygon grid. A KD-tree over
+    # tile centres gives the same cell assignment for network midpoints while
+    # avoiding a large GeoDataFrame spatial join on memory-limited deployment.
+    bounds = heatmap.geometry.bounds
+    tile_xy = np.column_stack(
+        ((bounds.minx.to_numpy() + bounds.maxx.to_numpy()) / 2,
+         (bounds.miny.to_numpy() + bounds.maxy.to_numpy()) / 2)
+    )
+    temperatures = heatmap["average_temperature"].to_numpy(dtype=float)
     default = float(fallback_c if fallback_c is not None else heatmap["average_temperature"].median())
-    lookup = joined.groupby("edge_index")["average_temperature"].first().to_dict()
-    for index, data in enumerate(edge_data):
-        value = lookup.get(index)
-        data["temperature_c"] = default if value is None or value != value else float(value)
+    if len(tile_xy):
+        _, nearest = cKDTree(tile_xy).query(np.asarray(edge_xy, dtype=float), k=1)
+        values = temperatures[nearest]
+    else:
+        values = np.full(len(edge_data), default)
+    for value, data in zip(values, edge_data):
+        data["temperature_c"] = default if not np.isfinite(value) else float(value)
     return graph
 
 
