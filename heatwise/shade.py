@@ -6,8 +6,6 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import rasterio
-from pyproj import Transformer
 
 
 def _project_shadow(
@@ -94,6 +92,9 @@ def apply_dynamic_shade(
     max_search_m: float = 100.0,
     sample_step_m: float = 2.0,
 ) -> tuple[Any, dict[str, float]]:
+    import rasterio
+    from pyproj import Transformer
+
     """Assign time-dependent shade by ray testing edge midpoints against a CHM.
 
     For each edge midpoint, samples are taken from that point toward the sun.

@@ -5,8 +5,6 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import rasterio
-from pyproj import Transformer
 
 
 def logarithmic_wind_speed(
@@ -42,6 +40,9 @@ def apply_local_pedestrian_wind(
     *,
     neighborhood_radius_m: float = 50.0,
 ) -> tuple[Any, dict[str, float]]:
+    import rasterio
+    from pyproj import Transformer
+
     """Assign edge-level 2 m wind using locally estimated aerodynamic roughness."""
     # The caller supplies a request-local graph; avoid another full graph copy.
     with rasterio.open(canopy_height_path) as canopy_src, rasterio.open(building_height_path) as building_src:

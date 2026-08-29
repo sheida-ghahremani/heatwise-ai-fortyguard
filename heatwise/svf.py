@@ -5,8 +5,6 @@ from pathlib import Path
 
 import networkx as nx
 import numpy as np
-import rasterio
-from rasterio.warp import transform as transform_coordinates
 
 
 def apply_lidar_sky_view_factor(
@@ -23,6 +21,9 @@ def apply_lidar_sky_view_factor(
     SVF is calculated as the azimuthal mean of cos²(maximum horizon angle).
     Cells outside the available LiDAR footprint receive SVF=1 and are flagged.
     """
+    import rasterio
+    from rasterio.warp import transform as transform_coordinates
+
     # Mutate the per-request graph in place. Copying the full OSM graph here
     # doubles peak RAM and exceeds the 512 MB production container limit.
     with rasterio.open(canopy_height_path) as canopy_src, rasterio.open(building_height_path) as building_src:

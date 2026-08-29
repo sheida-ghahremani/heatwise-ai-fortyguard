@@ -9,8 +9,6 @@ from pathlib import Path
 
 import networkx as nx
 import numpy as np
-import rasterio
-from rasterio.warp import transform as transform_coordinates
 
 from .shade import solar_position
 
@@ -37,6 +35,9 @@ def build_horizon_profile(
     azimuth_count: int = 16,
     sample_step_m: float = 4.0,
 ) -> Path:
+    import rasterio
+    from rasterio.warp import transform as transform_coordinates
+
     """Precompute directional LiDAR horizon angles for lightweight hourly shade."""
     with rasterio.open(canopy_height_path) as canopy_src, rasterio.open(building_height_path) as building_src:
         if canopy_src.crs != building_src.crs or canopy_src.transform != building_src.transform:
