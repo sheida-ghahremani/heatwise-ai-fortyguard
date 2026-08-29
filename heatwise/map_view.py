@@ -66,19 +66,36 @@ def build_map(
             tooltip="Official College Station boundary",
         ).add_to(fmap)
 
-    heat_scale = LinearColormap(["#fde68a", "#fb923c", "#dc2626"], vmin=32, vmax=39, caption="Demo air temperature (°C)")
     route_lats = [p[0] for route in routes for p in route_coordinates(graph, route)]
     route_lons = [p[1] for route in routes for p in route_coordinates(graph, route)]
     south, north = min(route_lats) - 0.003, max(route_lats) + 0.003
     west, east = min(route_lons) - 0.003, max(route_lons) + 0.003
+    visible_edges = []
     for a, b, data in graph.edges(data=True):
         pa = (float(graph.nodes[a]["y"]), float(graph.nodes[a]["x"]))
         pb = (float(graph.nodes[b]["y"]), float(graph.nodes[b]["x"]))
         mid_lat, mid_lon = (pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2
         if not (south <= mid_lat <= north and west <= mid_lon <= east):
             continue
-        folium.PolyLine([pa, pb], color=heat_scale(float(data["temperature_c"])), weight=2, opacity=0.38).add_to(fmap)
-    heat_scale.caption = "Air temperature (°C)"
+        visible_edges.append((pa, pb, float(data["temperature_c"])))
+
+    mapped_temperatures = [temperature for _, _, temperature in visible_edges]
+    if mapped_temperatures:
+        scale_min, scale_max = min(mapped_temperatures), max(mapped_temperatures)
+    else:
+        graph_temperatures = [float(data["temperature_c"]) for *_, data in graph.edges(data=True)]
+        scale_min, scale_max = min(graph_temperatures), max(graph_temperatures)
+    if scale_min == scale_max:
+        scale_min -= 0.1
+        scale_max += 0.1
+    heat_scale = LinearColormap(
+        ["#fde68a", "#fb923c", "#dc2626"],
+        vmin=scale_min,
+        vmax=scale_max,
+        caption="Mapped FortyGuard air temperature (°C)",
+    )
+    for pa, pb, edge_temperature in visible_edges:
+        folium.PolyLine([pa, pb], color=heat_scale(edge_temperature), weight=2, opacity=0.38).add_to(fmap)
     heat_scale.add_to(fmap)
 
     for route in routes:
