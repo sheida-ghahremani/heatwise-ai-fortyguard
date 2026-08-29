@@ -7,7 +7,7 @@ from heatwise.assistant import answer_question
 from heatwise.demo import build_demo_graph, nearest_node
 from heatwise.data_integration import load_fortyguard_heatmap
 from heatwise.live_data import MAX_FALLBACK_DAYS, cache_path, current_hour
-from heatwise.graph_io import load_routing_graph
+from heatwise.graph_io import load_routing_graph, routing_graph_exists
 from heatwise.models import Activity, AgeGroup, Clothing, UserProfile
 from heatwise.risk import apparent_temperature_c, segment_heat_cost
 from heatwise.routing import calculate_routes, prepare_graph
@@ -87,3 +87,4 @@ def test_graph_loader_prefers_binary_sidecar(tmp_path):
         pickle.dump(cached_graph, target, protocol=5)
     loaded = load_routing_graph(graphml_path)
     assert list(loaded.nodes) == [1]
+    assert routing_graph_exists(graphml_path)

@@ -8,6 +8,12 @@ from pathlib import Path
 import osmnx as ox
 
 
+def routing_graph_exists(path: str | Path) -> bool:
+    """Return true when either GraphML or its trusted binary sidecar exists."""
+    graph_path = Path(path)
+    return graph_path.exists() or graph_path.with_suffix(".pickle").exists()
+
+
 def load_routing_graph(path: str | Path):
     """Prefer a trusted binary sidecar, with GraphML as a portable fallback."""
     graph_path = Path(path)

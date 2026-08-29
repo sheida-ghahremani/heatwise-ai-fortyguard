@@ -19,7 +19,7 @@ from heatwise.albedo import apply_osm_surface_albedo
 from heatwise.demo import DemoWeather, LANDMARKS, build_demo_graph, nearest_node
 from heatwise.data_integration import assign_heatmap_to_graph, load_fortyguard_heatmap
 from heatwise.geocoding import GeocodingResult, search_college_station
-from heatwise.graph_io import load_routing_graph
+from heatwise.graph_io import load_routing_graph, routing_graph_exists
 from heatwise.live_data import COLLEGE_STATION_TZ, current_hour, fetch_hourly_snapshot, latest_cached_snapshot
 from heatwise.map_view import MAPBOX_STYLES, ROUTE_COLORS, build_map
 from heatwise.models import Activity, AgeGroup, Clothing, UserProfile
@@ -297,12 +297,12 @@ with st.sidebar:
     )
     if data_source == "Live College Station data" and activity == Activity.CYCLING.value:
         LIVE_GRAPH = area_config.get("prepared_bike_graph", area_config["bike_graph"])
-        if not LIVE_GRAPH.exists():
+        if not routing_graph_exists(LIVE_GRAPH):
             LIVE_GRAPH = area_config["bike_graph"]
         st.caption("Cycling uses the dedicated OSM bicycle network.")
     else:
         LIVE_GRAPH = area_config.get("prepared_graph", area_config["graph"])
-        if not LIVE_GRAPH.exists():
+        if not routing_graph_exists(LIVE_GRAPH):
             LIVE_GRAPH = area_config["graph"]
         st.caption("Walking and jogging use the OSM pedestrian network.")
     st.caption("UTCI describes environmental stress; activity-sensitive PET uses age, MET, clothing, MRT, humidity and wind.")
