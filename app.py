@@ -101,6 +101,7 @@ def load_live_graph(path: str):
     return load_routing_graph(path)
 
 
+@st.cache_resource(max_entries=2, show_spinner=False)
 def load_snapshot_graph(graph_path: str, heatmap_path: str, canopy_path: str, building_path: str):
     started = time.perf_counter()
     print(f"[snapshot] start graph={Path(graph_path).name}", flush=True)
