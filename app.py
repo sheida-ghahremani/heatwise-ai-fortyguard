@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 import os
 from datetime import datetime
+import time
 
 import pandas as pd
 import requests
@@ -102,9 +103,14 @@ def load_live_graph(path: str):
 
 @st.cache_resource(max_entries=1)
 def load_snapshot_graph(graph_path: str, heatmap_path: str, canopy_path: str, building_path: str):
+    started = time.perf_counter()
+    print(f"[snapshot] start graph={Path(graph_path).name}", flush=True)
     graph = load_routing_graph(graph_path)
+    print(f"[snapshot] graph loaded edges={len(graph.edges)} elapsed={time.perf_counter() - started:.2f}s", flush=True)
     heatmap = load_fortyguard_heatmap(heatmap_path)
+    print(f"[snapshot] heatmap loaded tiles={len(heatmap)} elapsed={time.perf_counter() - started:.2f}s", flush=True)
     graph = assign_heatmap_to_graph(graph, heatmap)
+    print(f"[snapshot] temperatures assigned elapsed={time.perf_counter() - started:.2f}s", flush=True)
     svf_values = [float(data.get("sky_view_factor", 1.0)) for *_, data in graph.edges(data=True)]
     has_prepared_svf = any("sky_view_factor" in data for *_, data in graph.edges(data=True))
     svf_meta = {
@@ -113,6 +119,7 @@ def load_snapshot_graph(graph_path: str, heatmap_path: str, canopy_path: str, bu
     }
     if not has_prepared_svf and Path(canopy_path).exists() and Path(building_path).exists():
         graph, svf_meta = apply_lidar_sky_view_factor(graph, canopy_path, building_path)
+    print(f"[snapshot] complete elapsed={time.perf_counter() - started:.2f}s", flush=True)
     return graph, float(heatmap["average_temperature"].mean()), svf_meta
 
 
